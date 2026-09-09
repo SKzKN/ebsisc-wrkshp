@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Scratch files from local test/preview runs
+__test__.html
+__diag__.html
+__frame__.html
+
+# Local Firebase config — never commit real keys (see config.example.js)
+config.js

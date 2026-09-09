@@ -1,0 +1,43 @@
+// Firestore security rules for the workshop board.
+// Paste into Firebase console > Firestore Database > Rules, then Publish.
+//
+// The registration guarantee lives here, not in the page. Each stock is one
+// document keyed by its slug, and `create` only succeeds when that document
+// does not already exist. Two teams racing for the same stock therefore cannot
+// both land: the second write is rejected by the server outright. Because
+// update and delete are denied, a claim also cannot be overwritten or stolen
+// by anyone loading the page.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /claims/{stockSlug} {
+
+      // The live board is public — anyone at the workshop can read it.
+      allow read: if true;
+
+      // First claim wins. `create` implicitly requires the document to be
+      // absent, so this is the whole race condition guard.
+      allow create: if request.resource.data.keys().hasOnly(['teamName', 'stockName', 'submittedAt'])
+                    && request.resource.data.teamName is string
+                    && request.resource.data.teamName.size() > 0
+                    && request.resource.data.teamName.size() <= 60
+                    && request.resource.data.stockName is string
+                    && request.resource.data.stockName.size() > 0
+                    && request.resource.data.stockName.size() <= 80
+                    && request.resource.data.submittedAt is string
+                    && request.resource.data.submittedAt.size() <= 40;
+
+      // A claim is final once made. Clear test rows from the Firebase console,
+      // which bypasses these rules.
+      allow update, delete: if false;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
