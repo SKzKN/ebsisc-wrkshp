@@ -20,26 +20,27 @@ copy needs a secure context, so prefer the local server.
 
 ## Firebase
 
-The live board is Firestore. Credentials live in `config.js`, which is
-**gitignored** — the repo ships `config.example.js` as a template.
+The live board is Firestore. Credentials live in `config.js`, which **is
+committed**, so the deployed site connects without any further setup. See
+[On the API key](#on-the-api-key) for why that is safe to publish.
+
+To point this at a different Firebase project:
 
 1. Create a project at <https://console.firebase.google.com>.
 2. Build → Firestore Database → Create database, in **production mode**.
-3. Project settings → Your apps → Web app, then:
-   ```sh
-   cp config.example.js config.js
-   # paste your values into config.js
-   ```
+3. Project settings → Your apps → Web app, then copy the values it gives you
+   into `config.js` (`config.example.js` shows the shape).
 4. Firestore → Rules → paste `firestore.rules.txt` → Publish.
 
-Without `config.js` the page still loads; the board just reports that it isn't
-connected.
+If `config.js` is ever missing, the page still loads; the board just reports
+that it isn't connected.
 
 ### On the API key
 
 A Firebase web `apiKey` is a public client identifier, not a secret — the
 browser cannot reach Firestore without receiving it, so anyone can read it from
-any deployed site. Keeping it out of the repo is hygiene, not a security
+any deployed site. Committing it here is therefore a deliberate choice rather
+than a leak — keeping it out of the repo would be hygiene, not a security
 boundary. The things that actually protect the data are:
 
 - the ruleset in `firestore.rules.txt`, which is what constrains every write;
@@ -62,8 +63,25 @@ bypasses the rules, the page cannot delete anything.
 
 ## Deploying
 
-Static hosting, anywhere. For GitHub Pages: Settings → Pages → deploy from
-`main`, root.
+Served from GitHub Pages at <https://workshop.ebsic.ee/>. The `CNAME` file in
+this repo claims that hostname, so two things have to line up:
+
+1. **Pages** — Settings → Pages → deploy from `main`, root. Turn on
+   *Enforce HTTPS* once the certificate has been issued, which takes a few
+   minutes after DNS starts resolving.
+2. **DNS** — on the `ebsic.ee` zone (elkdata), add:
+   ```
+   workshop   CNAME   skzkn.github.io.
+   ```
+
+The DNS target is the *account* host, `skzkn.github.io`, not a repo path. Which
+repo answers on that hostname is decided by the `CNAME` file, not by DNS.
+
+`ebsic.ee` itself is a separate Pages site (`canavarr/ebsic-apply`) and none of
+this affects it. One caveat: if that account has `ebsic.ee` registered as a
+*verified* domain on GitHub, subdomains of it cannot be claimed from another
+account, and Pages here will reject the custom domain. In that case the site has
+to be hosted under that account instead.
 
 ## Known limitation
 
